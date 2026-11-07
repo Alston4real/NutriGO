@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#173d35">
+  <meta name="description" content="NutriGO — practical nutrition and cooking guidance.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+  <title>NutriGO</title>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#home" aria-label="NutriGO home"><span class="brandmark">N</span><span>NutriGO</span></a>
+    <button id="installBtn" class="button button-light hidden">Install app</button>
+  </header>
+  <main>
+    <section id="home" class="view active">
+      <div class="hero">
+        <div class="eyebrow">EAT WELL. COOK CONFIDENTLY.</div>
+        <h1>Good food choices,<br><em>made simpler.</em></h1>
+        <p>Explore recipes, understand what's on your plate and follow clear cooking steps.</p>
+        <a class="button button-primary" href="#recipes">Explore recipes <span>→</span></a>
+      </div>
+      <div class="section-head"><div><div class="eyebrow">YOUR NUTRITION HUB</div><h2>What would you like to do?</h2></div></div>
+      <div class="tile-grid">
+        <a class="tile" href="#recipes"><span class="tile-icon">🍲</span><b>Find a recipe</b><small>Browse simple meal ideas</small></a>
+        <a class="tile" href="#nutrition"><span class="tile-icon">🥬</span><b>Check nutrition</b><small>Explore ingredient nutrition</small></a>
+        <a class="tile" href="#cook"><span class="tile-icon">📷</span><b>Cooking assistant</b><small>Follow guided steps</small></a>
+        <a class="tile" href="#recommend"><span class="tile-icon">✨</span><b>Get suggestions</b><small>Find meals that fit your needs</small></a>
+      </div>
+      <div class="notice"><b>Prototype notice</b><p>Nutrition figures in this starter are illustrative demo values, not verified dietary advice. Replace them with checked Singapore food-composition data before public use.</p></div>
+    </section>
+
+    <section id="recipes" class="view">
+      <div class="page-heading"><div class="eyebrow">DISCOVER</div><h1>Recipe library</h1><p>Choose a meal to see its ingredients, nutrition estimate and cooking guide.</p></div>
+      <label class="search-label" for="recipeSearch">Search recipes</label>
+      <input id="recipeSearch" class="field" placeholder="Try tofu, fish, vegetables…">
+      <div id="recipeList" class="recipe-grid"></div>
+    </section>
+
+    <section id="nutrition" class="view">
+      <div class="page-heading"><div class="eyebrow">UNDERSTAND YOUR FOOD</div><h1>Nutrition checker</h1><p>Select ingredients and quantities to calculate an illustrative meal estimate.</p></div>
+      <div class="panel">
+        <label for="ingredientSelect">Ingredient</label>
+        <select id="ingredientSelect" class="field"></select>
+        <div class="two-col">
+          <div><label for="quantity">Quantity (g)</label><input id="quantity" class="field" type="number" min="1" value="100"></div>
+          <div class="align-end"><button id="addIngredient" class="button button-primary full">Add ingredient</button></div>
+        </div>
+        <div id="selectedIngredients" class="selected-list"></div>
+        <div class="nutrition-result">
+          <div class="result-label">Estimated total</div>
+          <div class="calories"><span id="totalCalories">0</span><small> kcal</small></div>
+          <div class="macro-grid">
+            <div><b id="totalProtein">0</b><small>Protein (g)</small></div>
+            <div><b id="totalCarbs">0</b><small>Carbohydrate (g)</small></div>
+            <div><b id="totalFat">0</b><small>Fat (g)</small></div>
+            <div><b id="totalSodium">0</b><small>Sodium (mg)</small></div>
+          </div>
+        </div>
+        <p class="microcopy">Demo estimates only. Actual values vary by food variety, brand, preparation and serving size.</p>
+      </div>
+    </section>
+
+    <section id="cook" class="view">
+      <div class="page-heading"><div class="eyebrow">COOK WITH CONFIDENCE</div><h1>Cooking assistant</h1><p>Choose a recipe, start the camera if useful, then move through one instruction at a time.</p></div>
+      <div class="panel">
+        <label for="cookRecipe">Choose recipe</label>
+        <select id="cookRecipe" class="field"></select>
+        <div class="camera-wrap">
+          <video id="camera" autoplay playsinline muted></video>
+          <div class="camera-overlay"><span>Cooking guide</span><p id="cameraHint">Camera preview appears here when you start it.</p></div>
+        </div>
+        <div class="button-row">
+          <button id="startCamera" class="button button-primary">Start camera</button>
+          <button id="stopCamera" class="button button-light">Stop camera</button>
+        </div>
+        <div class="step-card">
+          <div class="step-count" id="stepCount">STEP 1</div>
+          <h3 id="stepTitle">Select a recipe</h3>
+          <p id="stepText">Cooking instructions will appear here.</p>
+          <div class="button-row">
+            <button id="prevStep" class="button button-light">Previous</button>
+            <button id="nextStep" class="button button-primary">Next step →</button>
+          </div>
+        </div>
+        <a id="videoLink" class="text-link" href="https://go.screenpal.com/watch/cT12hKnXZTg" target="_blank" rel="noopener">Open project cooking demonstration ↗</a>
+      </div>
+    </section>
+
+    <section id="recommend" class="view">
+      <div class="page-heading"><div class="eyebrow">PERSONALISED IDEAS</div><h1>Meal suggestions</h1><p>Tell us what matters today. NutriGO will match recipes using transparent prototype rules.</p></div>
+      <div class="panel">
+        <label for="goal">What is your meal priority?</label>
+        <select id="goal" class="field">
+          <option value="balanced">Balanced meal</option>
+          <option value="protein">More protein</option>
+          <option value="lower-sodium">Lower sodium</option>
+          <option value="vegetarian">Vegetarian</option>
+          <option value="quick">Quick preparation</option>
+        </select>
+        <label for="diet">Diet preference</label>
+        <select id="diet" class="field">
+          <option value="any">No preference</option>
+          <option value="vegetarian">Vegetarian</option>
+        </select>
+        <button id="getRecommendations" class="button button-primary full">Find suitable recipes</button>
+        <div id="recommendations" class="recommendation-list"></div>
+      </div>
+      <div class="notice"><b>How recommendations work</b><p>This first version uses transparent rules and demo recipe metadata. It is not a trained predictive AI model yet. A genuine model requires a representative, labelled dataset and independent evaluation.</p></div>
+    </section>
+
+    <section id="about" class="view">
+      <div class="page-heading"><div class="eyebrow">ABOUT THE PROJECT</div><h1>NutriGO</h1><p>A connected nutrition and cooking experience designed to make healthier food choices easier.</p></div>
+      <div class="panel">
+        <h3>Prototype modules</h3>
+        <ul class="plain-list"><li>Recipe discovery</li><li>Ingredient nutrition calculator</li><li>Guided cooking with optional camera preview</li><li>Rule-based meal recommendations</li><li>Video learning link</li></ul>
+        <h3>Privacy by design</h3><p>In this starter, ingredient selections and preferences are stored only in this browser. Camera access is requested only when you press Start camera. No camera video is uploaded or recorded by this code.</p>
+      </div>
+    </section>
+  </main>
+  <nav class="bottom-nav" aria-label="Main navigation">
+    <a href="#home" data-nav="home"><span>⌂</span>Home</a>
+    <a href="#recipes" data-nav="recipes"><span>▤</span>Recipes</a>
+    <a href="#nutrition" data-nav="nutrition"><span>◉</span>Nutrition</a>
+    <a href="#cook" data-nav="cook"><span>▣</span>Cook</a>
+    <a href="#recommend" data-nav="recommend"><span>✧</span>AI ideas</a>
+  </nav>
+  <script src="app.js"></script>
+</body>
+</html>
