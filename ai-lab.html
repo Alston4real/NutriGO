@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#173d35">
+<title>NutriGO · Food Recognition Lab</title>
+<style>
+:root{--green:#173d35;--green2:#2c876f;--mint:#eaf3ee;--ink:#1e2b27;--muted:#68756f;--line:#e1e8e2;--cream:#f8f8f3}
+*{box-sizing:border-box}body{margin:0;background:var(--cream);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+header{background:var(--green);color:#fff;padding:22px max(18px,calc((100vw - 1000px)/2))}
+header a{color:#d4eee1}header h1{margin:4px 0;font-size:clamp(27px,5vw,38px)}header p{margin:0;color:#d8e9e0}
+main{max-width:1000px;margin:24px auto;padding:0 16px 50px}.panel{background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:16px}
+h2{font-size:19px;margin:0 0 8px}.muted{color:var(--muted);font-size:13px}.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px}
+button{border:0;border-radius:11px;padding:12px 16px;background:var(--green2);color:white;font-weight:650;cursor:pointer}
+button:disabled{opacity:.5;cursor:not-allowed}.secondary{background:var(--mint);color:var(--green)}
+input[type=file]{max-width:100%;padding:9px;border:1px solid var(--line);border-radius:10px}
+#status{margin-top:12px;padding:10px 12px;background:#f1f6f2;border-radius:10px;color:var(--green);font-size:13px}
+.preview-wrap{display:none;position:relative;margin-top:14px;background:#172a25;border-radius:12px;overflow:hidden;line-height:0}
+#preview{display:block;width:100%;height:auto;max-height:65vh;object-fit:contain}
+#overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.results{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:14px}
+.result-card{border:1px solid var(--line);border-radius:12px;padding:13px}.result-card h3{font-size:14px;margin:0 0 8px}
+ul{padding-left:19px;margin:6px 0}.result-card li{margin:5px 0;font-size:13px}
+.pill{display:inline-block;border-radius:99px;background:var(--mint);color:var(--green);font-size:11px;padding:3px 8px;margin:2px}
+.warning{background:#fff8e8;border-left:3px solid #d5a33a;border-radius:8px;padding:11px 12px;font-size:12px;color:#695326;margin-top:12px}
+footer{max-width:1000px;margin:auto;padding:0 16px 30px;color:var(--muted);font-size:12px}
+@media(max-width:560px){header{padding:18px 16px}.panel{padding:14px}button{flex:1}}
+</style>
+</head>
+<body>
+<header>
+  <div><a href="./index.html">← Back to NutriGO</a></div>
+  <h1>Food Recognition Lab</h1>
+  <p>Early on-device computer-vision prototype · no account or API key required</p>
+</header>
+<main>
+  <section class="panel">
+    <h2>1. Choose a food photograph</h2>
+    <p class="muted">On phones and tablets, choose an existing photo or take a new one. The selected image is processed in this browser and is not uploaded by this page.</p>
+    <div class="controls">
+      <input id="fileInput" type="file" accept="image/*" capture="environment">
+      <button id="analyseBtn" disabled>Analyse photograph</button>
+      <button id="clearBtn" class="secondary" type="button">Clear</button>
+    </div>
+    <div id="status" role="status" aria-live="polite">Choose an image to begin. The first analysis downloads the model files.</div>
+    <div id="previewWrap" class="preview-wrap">
+      <img id="preview" alt="Selected food photograph">
+      <canvas id="overlay"></canvas>
+    </div>
+  </section>
+  <section class="panel">
+    <h2>2. Recognition results</h2>
+    <p class="muted">This baseline uses general-purpose public models, not a NutriGO-trained food model. Treat results as experimental suggestions.</p>
+    <div class="results">
+      <div class="result-card">
+        <h3>Object detection <span class="pill">COCO baseline</span></h3>
+        <div id="detectionResults" class="muted">No analysis yet.</div>
+      </div>
+      <div class="result-card">
+        <h3>Whole-image classification <span class="pill">ImageNet baseline</span></h3>
+        <div id="classificationResults" class="muted">No analysis yet.</div>
+      </div>
+    </div>
+    <div class="warning"><strong>Important limitation:</strong> the detector uses a general COCO model and the classifier uses general ImageNet categories. They are not trained to recognise Singaporean dishes such as laksa, chicken rice or nasi lemak, nor to identify every ingredient. We will replace these baselines with NutriGO-trained models after collecting and evaluating labelled images. Do not use predictions for nutrition or health decisions.</div>
+  </section>
+  <section class="panel">
+    <h2>3. What this prototype tests</h2>
+    <div class="muted">
+      <span class="pill">Image upload</span><span class="pill">On-device inference</span><span class="pill">Bounding boxes</span><span class="pill">Confidence scores</span><span class="pill">Whole-image labels</span><span class="pill">Mobile and desktop layout</span>
+      <p>Next: create a labelled Singapore-food dataset, train a custom ingredient detector and a separate dish classifier, then evaluate both on unseen images.</p>
+    </div>
+  </section>
+</main>
+<footer>NutriGO prototype. MediaPipe runtime and model files are fetched from public Google/CDN hosting. Internet access is required for the first load.</footer>
+<script type="module">
+const $ = id => document.getElementById(id);
+const fileInput = $("fileInput"), preview = $("preview");
+const previewWrap = $("previewWrap"), overlay = $("overlay");
+const analyseBtn = $("analyseBtn"), statusBox = $("status");
+let selectedUrl = null, detector = null, classifier = null, runtimePromise = null;
+
+const WASM_URL = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm";
+const DETECTOR_MODEL = "https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/float16/1/efficientdet_lite0.tflite";
+const CLASSIFIER_MODEL = "https://storage.googleapis.com/mediapipe-models/image_classifier/efficientnet_lite0/float32/1/efficientnet_lite0.tflite";
+
+function setStatus(message){ statusBox.textContent = message; }
+function clearResults(){
+  $("detectionResults").textContent = "No analysis yet.";
+  $("classificationResults").textContent = "No analysis yet.";
+  overlay.getContext("2d").clearRect(0,0,overlay.width,overlay.height);
+}
+async function loadRuntime(){
+  if(!runtimePromise){
+    runtimePromise = import("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/+esm");
+  }
+  return runtimePromise;
+}
+async function loadModels(){
+  const mp = await loadRuntime();
+  const vision = await mp.FilesetResolver.forVisionTasks(WASM_URL);
+  if(!detector){
+    setStatus("Loading object-detection model…");
+    detector = await mp.ObjectDetector.createFromOptions(vision,{
+      baseOptions:{modelAssetPath:DETECTOR_MODEL},
+      runningMode:"IMAGE",scoreThreshold:0.35,maxResults:20
+    });
+  }
+  if(!classifier){
+    setStatus("Loading image-classification model…");
+    classifier = await mp.ImageClassifier.createFromOptions(vision,{
+      baseOptions:{modelAssetPath:CLASSIFIER_MODEL},
+      runningMode:"IMAGE",maxResults:5,scoreThreshold:0.02
+    });
+  }
+}
+function drawDetections(detections){
+  const w=preview.naturalWidth,h=preview.naturalHeight;
+  overlay.width=w;overlay.height=h;
+  const ctx=overlay.getContext("2d");
+  ctx.clearRect(0,0,w,h);
+  ctx.lineWidth=Math.max(3,Math.min(w,h)*0.004);
+  ctx.font="bold "+Math.max(16,Math.min(w,h)*0.025)+"px system-ui";
+  detections.forEach(d=>{
+    const b=d.boundingBox,c=(d.categories&&d.categories[0])||{};
+    const label=c.categoryName||c.displayName||"Object",score=Number(c.score||0);
+    ctx.strokeStyle="#20d39a";ctx.fillStyle="rgba(12,55,43,.86)";
+    ctx.strokeRect(b.originX,b.originY,b.width,b.height);
+    const text=label+" "+(score*100).toFixed(0)+"%",tw=ctx.measureText(text).width+14;
+    const ty=Math.max(0,b.originY-30);
+    ctx.fillRect(b.originX,ty,tw,27);ctx.fillStyle="#fff";
+    ctx.fillText(text,b.originX+7,ty+19);
+  });
+}
+function renderDetections(detections){
+  if(!detections.length){$("detectionResults").textContent="No objects detected above the confidence threshold.";return;}
+  const ul=document.createElement("ul");
+  detections.forEach(d=>{
+    const c=(d.categories&&d.categories[0])||{},li=document.createElement("li");
+    li.textContent=(c.categoryName||c.displayName||"Unknown object")+" — "+(Number(c.score||0)*100).toFixed(1)+"%";
+    ul.appendChild(li);
+  });
+  $("detectionResults").replaceChildren(ul);
+}
+function renderClassifications(result){
+  const categories=result.classifications?.[0]?.categories||[];
+  if(!categories.length){$("classificationResults").textContent="No image labels returned.";return;}
+  const ul=document.createElement("ul");
+  categories.forEach(c=>{
+    const li=document.createElement("li");
+    li.textContent=(c.categoryName||c.displayName||"Unknown")+" — "+(Number(c.score||0)*100).toFixed(1)+"%";
+    ul.appendChild(li);
+  });
+  $("classificationResults").replaceChildren(ul);
+}
+fileInput.addEventListener("change",()=>{
+  const file=fileInput.files&&fileInput.files[0];if(!file)return;
+  if(!file.type.startsWith("image/")){setStatus("Please choose an image file.");return;}
+  if(selectedUrl)URL.revokeObjectURL(selectedUrl);
+  selectedUrl=URL.createObjectURL(file);
+  preview.onload=()=>{
+    previewWrap.style.display="block";overlay.width=preview.naturalWidth;overlay.height=preview.naturalHeight;
+    analyseBtn.disabled=false;clearResults();setStatus("Image ready. Select Analyse photograph.");
+  };
+  preview.onerror=()=>setStatus("The selected image could not be opened.");
+  preview.src=selectedUrl;
+});
+analyseBtn.addEventListener("click",async()=>{
+  if(!preview.complete||!preview.naturalWidth){setStatus("Choose an image first.");return;}
+  analyseBtn.disabled=true;clearResults();
+  try{
+    await loadModels();setStatus("Analysing image on this device…");
+    const detection=detector.detect(preview),classification=classifier.classify(preview);
+    drawDetections(detection.detections||[]);
+    renderDetections(detection.detections||[]);renderClassifications(classification);
+    setStatus("Analysis complete. These are general-purpose baseline predictions, not verified food identities.");
+  }catch(error){
+    console.error(error);
+    setStatus("The models could not run. Check your internet connection and reload. Details: "+(error?.message||String(error)));
+  }finally{analyseBtn.disabled=false;}
+});
+$("clearBtn").addEventListener("click",()=>{
+  if(selectedUrl)URL.revokeObjectURL(selectedUrl);
+  selectedUrl=null;fileInput.value="";preview.removeAttribute("src");previewWrap.style.display="none";
+  analyseBtn.disabled=true;clearResults();setStatus("Choose an image to begin. The first analysis downloads the model files.");
+});
+window.addEventListener("pagehide",()=>{
+  if(selectedUrl)URL.revokeObjectURL(selectedUrl);
+  detector?.close();classifier?.close();
+});
+</script>
+</body>
+</html>

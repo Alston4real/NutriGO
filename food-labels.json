@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "purpose": "Proposed NutriGO training taxonomy; these are target labels, not labels supported by the baseline public model.",
+  "ingredient_classes": [
+    "cooked_white_rice",
+    "cooked_noodles",
+    "chicken",
+    "egg",
+    "tofu",
+    "fish",
+    "prawn",
+    "leafy_vegetables",
+    "cruciferous_vegetables",
+    "tomato",
+    "cucumber",
+    "potato",
+    "carrot",
+    "mushroom",
+    "tempeh"
+  ],
+  "dish_classes": [
+    "chicken_rice",
+    "laksa",
+    "nasi_lemak",
+    "char_kway_teow",
+    "mee_goreng",
+    "fishball_noodles",
+    "roti_prata",
+    "yong_tau_foo",
+    "economic_rice",
+    "bak_chor_mee"
+  ],
+  "annotation_guidance": [
+    "Use ingredient labels for visible ingredient instances, not inferred hidden ingredients.",
+    "Use a separate dish label for the whole meal image.",
+    "Record raw or cooked state separately when it can be reliably observed.",
+    "Do not label an item when annotators cannot distinguish it confidently.",
+    "Keep test images separate by capture session or source to reduce leakage."
+  ]
+}

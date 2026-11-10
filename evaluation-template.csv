@@ -1,0 +1,1 @@
+image_id,split,device,capture_session,ground_truth_class,predicted_class,confidence,box_x,box_y,box_width,box_height,correct_detection,notes
